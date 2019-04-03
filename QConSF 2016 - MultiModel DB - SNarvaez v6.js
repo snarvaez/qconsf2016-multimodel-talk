@@ -83,6 +83,7 @@ db.orders.aggregate([
 ]);
 
 // view with $lookup =========
+db.vwRecalcOrderTotals.drop();
 db.createView("vwRecalcOrderTotals", "orders",
 	[ { "$unwind"  : "$items"},
 	  { "$lookup"  : {
@@ -93,8 +94,10 @@ db.createView("vwRecalcOrderTotals", "orders",
 	  { "$unwind"  : "$items_full" },
 		{ "$group" : {  "_id"   : "$orderID",
 										"total" : { $sum: { $multiply: [ "$items.qty", "$items_full.unit_cost" ] } }
-									}}]
+									}}
+	]
 );
+db.vwRecalcOrderTotals.find();
 
 // schema validation
 
@@ -171,7 +174,7 @@ db.itemsFacets.aggregate( [
          "categorizedByYears(Auto)": [ { $bucketAuto: { groupBy: "$year", buckets: 4 } } ]
       }
    }
-]);
+]).pretty();
 
 // Facets
 db.mugsFacets.drop()
@@ -193,7 +196,7 @@ db.mugsFacets.aggregate( [
          "categorizedByYears(Auto)": [ { $bucketAuto: { groupBy: "$year", buckets: 2 } } ]
       }
    }
-]);
+]).pretty();
 
 db.categoryGraph.drop();
 db.categoryGraph.insertMany([
@@ -209,6 +212,7 @@ db.categoryGraph.insertMany([
 	{ _id:10, name: "Blue Run Thermos", parentId: 7},
 ]);
 
+db.vwCategoryDepth1.drop();
 db.createView("vwCategoryDepth1", "categoryGraph", [
 	{ $graphLookup: {
 				from:             "categoryGraph",
@@ -219,6 +223,7 @@ db.createView("vwCategoryDepth1", "categoryGraph", [
 		    as:               "Children" }}
 ]);
 
+db.vwCategoryDepth2.drop();
 db.createView("vwCategoryDepth2", "categoryGraph", [
 	{ $graphLookup: {
 				from:             "categoryGraph",
@@ -238,7 +243,7 @@ db.categoryGraph.aggregate([
 		    connectToField:   "parentId",
 				maxDepth:         0,
 		    as:               "Children" }}
-]);
+]).pretty();
 
 db.categoryGraph.aggregate([
   { $match:       { _id: 5 }}, // <======
@@ -249,7 +254,7 @@ db.categoryGraph.aggregate([
 		    connectToField:   "parentId",
 				maxDepth:         0,
 		    as:               "Children" }}
-]);
+]).pretty();
 
 // IS THIS POSSIBLE? - INCEPTION!!!
 db.createView("vwCategoryDepthSelf", "categoryGraph", [
